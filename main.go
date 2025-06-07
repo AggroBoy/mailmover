@@ -7,27 +7,54 @@ import (
 	"github.com/emersion/go-imap/client"
 	"log"
 	"os"
+	"path/filepath"
+	"strings"
 )
+
+func resolveSetting(name string, category string) (string, error) {
+	// 1. Look in environment
+	if val := os.Getenv(name); val != "" {
+		return val, nil
+	}
+
+	// 2. Look in config path
+	path := filepath.Join("/etc/mailmover/", category, name)
+	if val, err := os.ReadFile(path); err == nil {
+		return strings.TrimSpace(string(val)), nil
+	}
+
+	return "", fmt.Errorf("setting %s not found in category %s", name, category)
+}
+
+func getMandatoryConfigValue(name string) string {
+	value, err := resolveSetting(name, "config")
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
+
+	return value
+}
+
+func getMandatorySecretValue(name string) string {
+	value, err := resolveSetting(name, "secrets")
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
+
+	return value
+}
 
 func main() {
 	os.Exit(run())
 }
 
-func mandatoryEnv(key string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		log.Fatalf("Environment variable %s is mandatory", key)
-	}
-	return value
-}
-
 func run() int {
 	// Get config from environment variables
-	username := mandatoryEnv("IMAP_USERNAME")
-	password := mandatoryEnv("IMAP_PASSWORD")
-	imapServer := mandatoryEnv("IMAP_SERVER")
-	fromFolder := mandatoryEnv("FROM_FOLDER")
-	toFolder := mandatoryEnv("TO_FOLDER")
+	username := getMandatorySecretValue("IMAP_USERNAME")
+	password := getMandatorySecretValue("IMAP_PASSWORD")
+	imapServer := getMandatoryConfigValue("IMAP_SERVER")
+	fromFolder := getMandatoryConfigValue("FROM_FOLDER")
+	toFolder := getMandatoryConfigValue("TO_FOLDER")
 
 	tlsConfig := &tls.Config{
 		MinVersion: tls.VersionTLS12,
