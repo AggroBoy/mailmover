@@ -11,38 +11,6 @@ import (
 	"strings"
 )
 
-func resolveSetting(name string, category string) (string, error) {
-	// 1. Look in environment
-	if val := os.Getenv(name); val != "" {
-		return val, nil
-	}
-
-	// 2. Look in config path
-	path := filepath.Join("/etc/mailmover/", category, name)
-	if val, err := os.ReadFile(path); err == nil {
-		return strings.TrimSpace(string(val)), nil
-	}
-
-	return "", fmt.Errorf("setting %s not found in category %s", name, category)
-}
-
-func getMandatoryConfigValue(name string) string {
-	value, err := resolveSetting(name, "config")
-	if err != nil {
-		log.Fatalf("%v", err)
-	}
-
-	return value
-}
-
-func getMandatorySecretValue(name string) string {
-	value, err := resolveSetting(name, "secrets")
-	if err != nil {
-		log.Fatalf("%v", err)
-	}
-
-	return value
-}
 
 func main() {
 	os.Exit(run())
@@ -157,4 +125,37 @@ func processFolder(fromFolder string, toFolder string, c *client.Client) error {
 		}
 	}
 	return nil
+}
+
+func resolveSetting(name string, category string) (string, error) {
+	// 1. Look in environment
+	if val := os.Getenv(name); val != "" {
+		return val, nil
+	}
+
+	// 2. Look in config path
+	path := filepath.Join("/etc/mailmover/", category, name)
+	if val, err := os.ReadFile(path); err == nil {
+		return strings.TrimSpace(string(val)), nil
+	}
+
+	return "", fmt.Errorf("setting %s not found in category %s", name, category)
+}
+
+func getMandatoryConfigValue(name string) string {
+	value, err := resolveSetting(name, "config")
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
+
+	return value
+}
+
+func getMandatorySecretValue(name string) string {
+	value, err := resolveSetting(name, "secrets")
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
+
+	return value
 }
