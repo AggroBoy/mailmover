@@ -11,8 +11,10 @@ import (
 	"strings"
 )
 
+var buildSHA = "dev"
 
 func main() {
+	log.Printf("MailMover %s startup", buildSHA)
 	os.Exit(run())
 }
 
