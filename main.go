@@ -141,7 +141,7 @@ func resolveSetting(name string, category string) (string, error) {
 		return strings.TrimSpace(string(val)), nil
 	}
 
-	return "", fmt.Errorf("setting %s not found in category %s", name, category)
+	return "", fmt.Errorf("%s %s not found (%s)", category, name, path)
 }
 
 func getMandatoryConfigValue(name string) string {
