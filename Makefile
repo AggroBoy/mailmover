@@ -1,6 +1,6 @@
 
 BIN_NAME	:= mailmover
-IMAGE_NAME  := thoth/mailmover
+IMAGE_NAME	:= mailmover
 TAG 		?= $(shell git rev-parse --short HEAD)
 BUILD_DIR	:= build
 BIN_PATH	:= $(BUILD_DIR)/$(BIN_NAME)
@@ -25,8 +25,8 @@ build-image: $(BIN_PATH)
 push-image: build-image
 	docker tag $(IMAGE_NAME):$(TAG) $(REGISTRY)/$(IMAGE_NAME):$(TAG)
 	docker tag $(IMAGE_NAME):$(TAG) $(REGISTRY)/$(IMAGE_NAME):latest
-	docker push $(REGISTRY)/$(IMAGE_NAME):$TAG
-	docker push $(REGISTRY)/$(IMPAGE_NAME):latest
+	docker push $(REGISTRY)/$(IMAGE_NAME):$(TAG)
+	docker push $(REGISTRY)/$(IMAGE_NAME):latest
 
 .PHONEY: deploy
 deploy: push-image
