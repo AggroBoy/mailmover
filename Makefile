@@ -16,7 +16,6 @@ $(BIN_PATH): $(shell find . -name '*.go') go.mod go.sum
 .PHONEY: build-image
 build-image: $(BIN_PATH)
 	docker build \
-		--build-arg BIN_NAME=$(BIN_NAME) \
 		--build-arg BIN_PATH=$(BIN_PATH) \
 		-t $(IMAGE_NAME):$(TAG) \
 		-t $(IMAGE_NAME):latest .
