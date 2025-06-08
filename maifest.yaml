@@ -1,0 +1,51 @@
+aapiVersion: v1
+kind: Namespace
+metadata:
+  name: mailmover
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mailmover-config
+  namespace: mailmover
+data:
+  config.yaml: |
+    IMAP_SERVER: imap.fastmail.com:993
+    FROM_FOLDER: Trash
+    TO_FOLDER: Archive
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mailmover
+  namespace: mailmover
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mailmover
+  template:
+    metadata:
+      labels:
+        app: mailmover
+    spec:
+      containers:
+        - name: mailmover
+          image: MAILMOVER_IMAGE
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/mailmover/config
+              readOnly: true
+            - name: secrets-volume
+              mountPath: /etc/mailmover/secrets
+              readOnly: true
+      volumes:
+        - name: config-volume
+          configMap:
+            name: mailmover-config
+        - name: secrets-volume
+          secret:
+            secretName: mailmover-secrets
+
