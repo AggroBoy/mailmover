@@ -3,10 +3,9 @@ kind: ConfigMap
 metadata:
   name: mailmover-config
 data:
-  config.yaml: |
-    IMAP_SERVER: imap.fastmail.com:993
-    FROM_FOLDER: Trash
-    TO_FOLDER: Archive
+  IMAP_SERVER: "imap.fastmail.com:993"
+  FROM_FOLDER: "Trash"
+  TO_FOLDER: "Archive"
 
 ---
 apiVersion: apps/v1
