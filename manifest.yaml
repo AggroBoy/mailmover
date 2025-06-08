@@ -1,14 +1,7 @@
-aapiVersion: v1
-kind: Namespace
-metadata:
-  name: mailmover
-
----
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: mailmover-config
-  namespace: mailmover
 data:
   config.yaml: |
     IMAP_SERVER: imap.fastmail.com:993
@@ -20,7 +13,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mailmover
-  namespace: mailmover
 spec:
   replicas: 1
   selector:
