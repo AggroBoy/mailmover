@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 var buildSHA = "dev"
@@ -33,7 +34,7 @@ func run() int {
 
 	// IDLE setup
 	idleStop := make(chan struct{})
-	idleCleanup, idleUpdates, idleEnd, err := idleSetup(imapServer, tlsConfig, fromFolder, username, password, idleStop)
+	idleCleanup, idleUpdates, idleError, err := idleSetup(imapServer, tlsConfig, fromFolder, username, password, idleStop)
 	if err != nil {
 		log.Printf("setting-up IDLE connection: %v", err)
 		return 1
@@ -41,35 +42,26 @@ func run() int {
 	defer idleCleanup()
 	defer func() {
 		close(idleStop)
-		<-idleEnd
+		select {
+		case <-idleError:
+			// graceful exit path
+		case <-time.After(2 * time.Second):
+			fmt.Fprintln(os.Stderr, "Timeout waiting for idle goroutine to exit")
+		}
 	}()
 
-	// Command setup
-	comCon, err := client.DialTLS(imapServer, tlsConfig)
-	if err != nil {
-		log.Printf("connecting command connection: %v", err)
-		return 1
-	}
-	defer comCon.Logout()
-	if err := comCon.Login(username, password); err != nil {
-		log.Printf("logging-in command connection: %v", err)
-		return 1
-	}
-
-	if err := processFolder(fromFolder, toFolder, comCon); err != nil {
+	if err := processFolder(imapServer, username, password, fromFolder, toFolder); err != nil {
 		log.Printf("processing %v folder: %v", fromFolder, err)
-		return 1
 	}
 
 	for {
 		select {
 		case <-idleUpdates:
 			log.Printf("Received IDLE update for %s", fromFolder)
-			if err := processFolder(fromFolder, toFolder, comCon); err != nil {
+			if err := processFolder(imapServer, username, password, fromFolder, toFolder); err != nil {
 				log.Printf("processing %v folder: %v", fromFolder, err)
-				return 1
 			}
-		case err := <-idleEnd:
+		case err := <-idleError:
 			if err != nil {
 				log.Printf("IDLE error: %v", err)
 				return 1
@@ -91,9 +83,9 @@ func idleSetup(imapServer string, tlsConfig *tls.Config, fromFolder string, user
 		return nil, nil, nil, fmt.Errorf("selecting %v folder: %w", fromFolder, err)
 	}
 	idleUpdates := make(chan client.Update)
-	idleEnd := make(chan error, 1)
+	idleError := make(chan error, 1)
 	go func() {
-		idleEnd <- idleCon.Idle(idleStop, nil)
+		idleError <- idleCon.Idle(idleStop, nil)
 	}()
 	idleCon.Updates = idleUpdates
 
@@ -103,10 +95,31 @@ func idleSetup(imapServer string, tlsConfig *tls.Config, fromFolder string, user
 		}
 	}
 
-	return cleanup, idleUpdates, idleEnd, nil
+	return cleanup, idleUpdates, idleError, nil
 }
 
-func processFolder(fromFolder string, toFolder string, c *client.Client) error {
+func processFolder(imapServer string, username string, password string, fromFolder string, toFolder string) error {
+	// Create a command connection
+	// this could probably be cached, but long-running sockets require management; keeping it for just one invocation
+	// is the simpler, less error-prone approach.
+	tlsConfig := &tls.Config{
+		MinVersion: tls.VersionTLS12,
+		// Add additional TLS configurations as needed
+	}
+	c, err := client.DialTLS(imapServer, tlsConfig)
+	if err != nil {
+		return fmt.Errorf("connecting command connection: %w", err)
+	}
+	defer func(c *client.Client) {
+		err := c.Logout()
+		if err != nil {
+			log.Printf("logging out of command connection: %v", err)
+		}
+	}(c)
+	if err := c.Login(username, password); err != nil {
+		return fmt.Errorf("logging-in command connection: %w", err)
+	}
+
 	mbox, err := c.Select(fromFolder, false)
 	if err != nil {
 		return fmt.Errorf("selecting %v folder: %w", fromFolder, err)
