@@ -46,7 +46,7 @@ func run() int {
 		case <-idleError:
 			// graceful exit path
 		case <-time.After(2 * time.Second):
-			fmt.Fprintln(os.Stderr, "Timeout waiting for idle goroutine to exit")
+			_, _ = fmt.Fprintln(os.Stderr, "Timeout waiting for idle goroutine to exit")
 		}
 	}()
 
