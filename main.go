@@ -84,7 +84,7 @@ func idleSetup(imapServer string, tlsConfig *tls.Config, fromFolder string, user
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("selecting %v folder: %w", fromFolder, err)
 	}
-	idleUpdates := make(chan client.Update)
+	idleUpdates := make(chan client.Update, 100)
 	idleError := make(chan error, 1)
 	go func() {
 		idleError <- idleCon.Idle(idleStop, nil)
