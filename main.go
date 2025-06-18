@@ -57,7 +57,9 @@ func run() int {
 	for {
 		select {
 		case <-idleUpdates:
-			log.Printf("Received IDLE update for %s", fromFolder)
+			log.Printf("Received IDLE update for %s - beginning debounce delay", fromFolder)
+			debounceAndDrainUpdates(idleUpdates, 5*time.Second)
+			log.Print("Debounce delay complete")
 			if err := processFolder(imapServer, username, password, fromFolder, toFolder); err != nil {
 				log.Printf("processing %v folder: %v", fromFolder, err)
 			}
@@ -96,6 +98,21 @@ func idleSetup(imapServer string, tlsConfig *tls.Config, fromFolder string, user
 	}
 
 	return cleanup, idleUpdates, idleError, nil
+}
+
+func debounceAndDrainUpdates(channel <-chan client.Update, debounceDelay time.Duration) {
+	// Wait for the debounce delay
+	time.Sleep(debounceDelay)
+
+	// Drain all additional updates (we just process the whole folder, so handling multiple updates in one execution is fine)
+DrainLoop:
+	for {
+		select {
+		case <-channel:
+		default:
+			break DrainLoop
+		}
+	}
 }
 
 func processFolder(imapServer string, username string, password string, fromFolder string, toFolder string) error {
