@@ -20,7 +20,7 @@ func main() {
 }
 
 func run() int {
-	// Get config from environment variables
+	// Get config
 	username := getMandatorySecretValue("IMAP_USERNAME")
 	password := getMandatorySecretValue("IMAP_PASSWORD")
 	imapServer := getMandatoryConfigValue("IMAP_SERVER")
