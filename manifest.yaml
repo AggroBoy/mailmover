@@ -39,4 +39,3 @@ spec:
         - name: secrets-volume
           secret:
             secretName: mailmover-secrets
-

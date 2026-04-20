@@ -1,4 +1,5 @@
-FROM alpine:3.22
+ARG BASE_IMAGE=alpine:3.22
+FROM ${BASE_IMAGE}
 LABEL authors="will"
 
 ARG BIN_PATH

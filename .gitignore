@@ -27,6 +27,7 @@ go.work
 
 .idea/
 .vscode/
+local.mk
 *.swp
 *.swo
 
